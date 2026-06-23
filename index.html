@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Venezia 2026 · Familia Nestor</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#2C3440; --bg-mid:#3A4455; --bg-light:#4E5D72;
+  --orange:#9BB5CC; --amber:#C5D8E8;
+  --white:#FFFFFF; --card:#FFFFFF; --notes:#EEF3F8; --banner:#E2ECF4;
+  --ink:#1C1E24; --muted:#6B7280; --border:#C8D8E8;
+  --day1:#6A8FAF; --day2:#5A7F9F; --day3:#4A6F8F;
+  --radius:10px; --accent:var(--day1);
+  --ff:"Archivo",sans-serif; --fm:"IBM Plex Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);}
+body{color:var(--white);font-family:var(--ff);-webkit-font-smoothing:antialiased;padding-bottom:2rem;max-width:600px;margin:0 auto;}
+
+.cover{background:var(--bg);padding:0;}
+.cover-band{background:var(--bg-mid);padding:.55rem 1.3rem;}
+.cover-band p{font-family:var(--fm);font-size:.65rem;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;}
+.cover-title{background:var(--bg);padding:1.1rem 1.3rem .4rem;}
+.cover-title h1{font-size:3.6rem;font-weight:700;color:var(--white);line-height:1.05;letter-spacing:-.02em;}
+.cover-sub{background:var(--bg-mid);padding:.55rem 1.3rem;}
+.cover-sub p{font-size:1rem;color:var(--amber);font-weight:600;}
+.cover-dates{background:var(--bg);padding:.7rem 1.3rem;}
+.cover-dates p{font-size:1.1rem;font-weight:700;color:var(--white);letter-spacing:.04em;}
+.cover-loc{background:var(--bg-light);padding:.5rem 1.3rem;}
+.cover-loc p{font-size:.82rem;color:var(--white);}
+.cover-route-label{background:var(--bg);padding:.45rem 1.3rem 0;}
+.cover-route-label p{font-family:var(--fm);font-size:.65rem;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;}
+.cover-route{background:var(--bg-mid);padding:.55rem 1.3rem;}
+.cover-route p{font-size:.85rem;font-weight:700;color:var(--white);}
+.cover-info{background:var(--bg);padding:.6rem 1.3rem 0;}
+.info-row{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.1);padding:.55rem 0;}
+.info-row:last-child{border-bottom:none;}
+.info-label{font-family:var(--fm);font-size:.7rem;color:var(--orange);font-weight:600;min-width:5.5rem;padding-top:.05rem;}
+.info-val{font-size:.82rem;color:var(--white);line-height:1.45;}
+.cover-note{background:var(--bg);padding:.9rem 1.3rem 1.2rem;text-align:center;}
+.cover-note p{font-size:.72rem;color:rgba(255,255,255,.45);font-family:var(--fm);}
+
+.tabs{display:flex;gap:.4rem;padding:.6rem .9rem;overflow-x:auto;background:var(--bg-mid);position:sticky;top:0;z-index:30;scrollbar-width:none;border-bottom:3px solid var(--bg);}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:0 0 auto;display:flex;align-items:center;gap:.35rem;padding:.42rem .75rem;border-radius:999px;border:1.5px solid var(--tab-color);background:transparent;color:var(--white);font-family:var(--ff);font-weight:600;font-size:.78rem;cursor:pointer;transition:background .15s;}
+.tab .num{width:1.25rem;height:1.25rem;border-radius:50%;background:var(--tab-color);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.7rem;font-weight:700;}
+.tab.active{background:var(--tab-color);}
+.tab.active .num{background:rgba(0,0,0,.25);}
+
+.day-label{background:var(--bg-mid);padding:.42rem 1.1rem;text-align:center;}
+.day-label p{font-family:var(--fm);font-size:.68rem;letter-spacing:.12em;color:var(--amber);text-transform:uppercase;}
+.day-title-block{background:var(--bg);padding:.8rem 1.1rem .3rem;border-bottom:4px solid var(--accent);}
+.day-title-block h2{font-size:1.85rem;font-weight:700;color:var(--white);line-height:1.15;}
+.day-subtitle{background:var(--bg);padding:.25rem 1.1rem .75rem;}
+.day-subtitle p{font-size:.9rem;color:var(--amber);}
+.banner{margin:.0rem .9rem .6rem;padding:.65rem .9rem .65rem 1rem;background:var(--banner);color:var(--ink);border-radius:var(--radius);border-left:4px solid var(--accent);font-size:.85rem;font-weight:600;line-height:1.4;}
+
+#map{height:36vh;min-height:200px;margin:.0rem .9rem .7rem;border-radius:var(--radius);border:2px solid var(--accent);overflow:hidden;}
+
+.schedule{padding:.0 .9rem;display:flex;flex-direction:column;gap:.6rem;}
+.stop{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+.stop-header{display:grid;grid-template-columns:2.6rem 1fr;align-items:start;}
+.stop-num{display:flex;align-items:center;justify-content:center;background:var(--accent);min-height:2.6rem;font-family:var(--fm);font-weight:700;font-size:.95rem;color:var(--white);}
+.stop-meta{padding:.55rem .8rem .35rem;}
+.stop-time{font-family:var(--fm);font-size:.72rem;color:var(--bg-light);font-weight:600;letter-spacing:.04em;}
+.stop-title{font-size:1rem;font-weight:700;color:var(--ink);line-height:1.25;margin:.07rem 0 .12rem;}
+.stop-addr{font-size:.73rem;color:var(--muted);}
+.stop-notes{padding:.5rem .8rem .55rem 2.6rem;background:var(--notes);font-size:.85rem;color:var(--ink);line-height:1.45;border-left:3px solid var(--accent);}
+.stop-footer{padding:.45rem .8rem .55rem;display:flex;gap:.6rem;align-items:center;border-top:1px solid var(--border);}
+.btn-go{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;color:var(--bg);text-decoration:none;border-bottom:1.5px solid var(--orange);}
+.stop.special .stop-num{background:linear-gradient(135deg,var(--bg-mid),var(--bg-light));}
+.stop.special .stop-notes{border-left-color:var(--bg-light);background:#E5EEF5;}
+.stop.optional .stop-num{background:repeating-linear-gradient(45deg,var(--bg-light),var(--bg-light) 4px,var(--bg) 4px,var(--bg) 8px);}
+.stop.optional .stop-notes{border-left-color:var(--bg-light);background:#EDF4F9;border-left-style:dashed;}
+.sparkle{display:inline-block;animation:twinkle 1.8s ease-in-out infinite;}
+.sparkle:nth-of-type(2){animation-delay:.5s;}
+@keyframes twinkle{0%,100%{opacity:.3;transform:scale(.85)}50%{opacity:1;transform:scale(1.15)}}
+
+.block-sep{margin:.9rem .9rem .3rem;padding:.4rem .8rem;background:rgba(255,255,255,.08);border-radius:999px;text-align:center;}
+.block-sep p{font-family:var(--fm);font-size:.65rem;letter-spacing:.1em;color:var(--amber);text-transform:uppercase;}
+
+.lmarker{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--fm);font-weight:700;font-size:.75rem;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);}
+.lmarker.home{background:#fff;color:var(--bg);border-color:var(--amber);}
+.leaflet-popup-content{font-family:var(--ff);font-size:.8rem;line-height:1.4;}
+.leaflet-popup-content a{color:var(--bg);font-weight:700;}
+
+.practical{margin-top:1.2rem;}
+.practical-title{background:var(--bg-mid);padding:.7rem 1.1rem;text-align:center;}
+.practical-title p{font-family:var(--fm);font-size:.72rem;letter-spacing:.12em;color:var(--amber);text-transform:uppercase;font-weight:700;}
+.tips{padding:.8rem .9rem 0;}
+.tip-item{margin-bottom:.6rem;}
+.tip-title{font-family:var(--fm);font-size:.7rem;letter-spacing:.1em;color:var(--orange);font-weight:600;text-transform:uppercase;margin-bottom:.18rem;}
+.tip-text{font-size:.85rem;color:var(--white);line-height:1.48;}
+.tip-divider{border:none;border-top:1px solid rgba(255,255,255,.15);margin:.6rem 0;}
+
+footer{background:var(--bg-mid);padding:.75rem 1.1rem;text-align:center;font-family:var(--fm);font-size:.65rem;color:rgba(255,255,255,.5);line-height:1.6;margin-top:.9rem;}
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="cover" id="cover">
+  <div class="cover-band"><p>VENEZIA 2026 · JORGE &amp; FAMILIA</p></div>
+  <div class="cover-title"><h1>VENEZIA</h1></div>
+  <div class="cover-sub"><p>Jorge &amp; familia &nbsp;·&nbsp; 5 personas</p></div>
+  <div class="cover-dates"><p>23 — 25 JULIO 2026</p></div>
+  <div class="cover-loc"><p>Bacino Orseolo · San Marco · Venezia centro histórico</p></div>
+  <div class="cover-route-label"><p>RUTA DEL VIAJE</p></div>
+  <div class="cover-route"><p>✈ BUE &nbsp;→&nbsp; PARIS &nbsp;→&nbsp; LONDRES &nbsp;→&nbsp; ROMA &nbsp;→&nbsp; FIRENZE &nbsp;→&nbsp; 🚢 VENEZIA &nbsp;→&nbsp; MADRID</p></div>
+  <div class="cover-info">
+    <div class="info-row"><span class="info-label">▪ DEPTO</span><span class="info-val">Bacino Orseolo · San Marco<br>A 2 min caminando de la Piazza San Marco</span></div>
+    <div class="info-row"><span class="info-label">🚄 LLEGADA</span><span class="info-val">Tren desde Firenze SMN — llegada Venezia Santa Lucia<br>Miércoles 23/7 · ~16:30 hs</span></div>
+    <div class="info-row"><span class="info-label">🚄 PARTIDA</span><span class="info-val">Tren a Milán ~15:00 hs — Viernes 25/7<br>Sale desde Venezia Santa Lucia</span></div>
+  </div>
+  <div class="cover-note"><p>Itinerario preparado con Claude AI · Familia Nestor 2026</p></div>
+</div>
+
+<!-- TABS -->
+<nav class="tabs" id="tabs"></nav>
+
+<!-- CONTENIDO DEL DIA -->
+<div id="day-content"></div>
+
+<!-- MAPA -->
+<div id="map"></div>
+
+<!-- SCHEDULE -->
+<main class="schedule" id="schedule"></main>
+
+<!-- PRACTICAL INFO -->
+<div class="practical" id="practical"></div>
+
+<footer>
+  Bacino Orseolo, San Marco · Venezia &nbsp;·&nbsp; Tren a Milán 25/7 · ~15:00h desde Venezia Santa Lucia &nbsp;·&nbsp; 23–25 Jul 2026<br>
+  🧭 "Cómo llegar" abre Google Maps caminando desde la parada anterior
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" crossorigin=""></script>
+<script>
+const HOME={lat:45.4341,lng:12.3363,name:"Departamento — Bacino Orseolo"};
+
+const DAYS=[
+  {id:1,date:"Mié 23/7",title:"Llegada a Venezia",subtitle:"Vaporetto por el Gran Canal · San Marcos · Dorsoduro al atardecer",color:"#6A8FAF",
+   banner:"🚢 Llegada en tren desde Firenze ~16:30 hs. Vaporetto N°1 por todo el Gran Canal hasta San Marco. Primera noche veneciana: la Piazza, el Puente de los Suspiros, la Salute al atardecer.",
+   stops:[
+    {time:"16:30",title:"Venezia Santa Lucia — embarcan en el Vaporetto N°1",address:"Stazione di Santa Lucia, Venezia",notes:"Al salir del andén aparece el Gran Canal. Comprar el billete 24h en las máquinas de la estación (€25 adulto · €13 menor) y en 3 minutos están en la proa del N°1 dirección San Marco. Si consiguen lugar adelante, ponganlo todo ahí.",lat:45.4411,lng:12.3211,special:true},
+    {time:"17:10",title:"San Marco Vallaresso — bajan del Vaporetto",address:"Fermata San Marco Vallaresso, Venezia",notes:"35 minutos flotando el Gran Canal completo: el Palazzo Grimani, Ca' Foscari, el puente de Rialto apareciendo en la curva, la cúpula de la Salute cerrando el canal. El departamento está a 3 minutos a pie — Bacino Orseolo es la primera callecita a la derecha.",lat:45.4322,lng:12.3363},
+    {time:"17:15",title:"Departamento — dejan valijas, se refrescan",address:"Bacino Orseolo, San Marco, Venezia",notes:"El estacionamiento de góndolas más famoso de Venecia está literalmente en la puerta. 30 minutos para recuperarse del viaje.",lat:45.4341,lng:12.3363},
+    {time:"17:50",title:"Piazza San Marco — primer contacto",address:"Piazza San Marco, Venezia",notes:"El sol de las 18:00 en julio roza los mosaicos dorados de la Basílica desde abajo y los enciende. Recorren la plaza: fachada de San Marcos, Palazzo Ducale, Campanile. Todo de afuera — guardan el interior para mañana. Un café en el Caffè Florian (abierto desde 1720) vale la experiencia aunque salga caro.",lat:45.4341,lng:12.3388},
+    {time:"18:45",title:"Puente de los Suspiros + Riva degli Schiavoni",address:"Ponte dei Sospiri, Venezia",notes:"Desde el puente peatonal contiguo ven el Ponte dei Sospiri completo — la foto más icónica de Venecia. Después caminan por la Riva degli Schiavoni, el paseo más largo sobre la laguna: góndolas, barcos, la isla de San Giorgio al fondo con el sol bajando.",lat:45.4340,lng:12.3409},
+    {time:"19:15",title:"Giardini Reali — pausa frente a la laguna",address:"Giardini Reali, San Marco, Venezia",notes:"Los jardines reales napoleónicos, escondidos detrás de la Piazza, con vista directa a la laguna y a San Giorgio. Un rincón de silencio absoluto a metros del caos de San Marcos. Perfectos para que los chicos descansen antes de seguir hacia Dorsoduro.",lat:45.4330,lng:12.3383},
+    {time:"19:45",title:"Santa Maria della Salute — atardecer",address:"Dorsoduro 1, Venezia",notes:"Cruzan el Ponte dell'Accademia (el único puente de madera del Gran Canal) y bajan hacia la punta de Dorsoduro. La Salute: basílica barroca blanca con cúpula enorme, construida como promesa por sobrevivir la gran peste de 1630. A esta hora la luz es dorada y la laguna está en calma. Tiziano adentro, entrada gratuita.",lat:45.4307,lng:12.3348,special:true},
+    {time:"20:45",title:"Cena en los callejones de San Marco",address:"San Marco / San Polo, Venezia",notes:"Decenas de opciones a 5 minutos del depto. Regla de oro: alejarse media cuadra de la Piazza. Buscar osteria sin menú turístico en la vitrina. Pedir bigoli in salsa, sarde in saor o seppia al nero con polenta. Vino de la casa en carafe.",lat:45.4345,lng:12.3355}
+  ]},
+
+  {id:2,date:"Jue 24/7",title:"Mercato · Strada Nova · San Marcos",subtitle:"Mañana de mercado · Shopping · Basílica · Campanile · Fondaco al atardecer",color:"#5A7F9F",
+   banner:"🦀 Mañana caminando desde el depto hasta Rialto y Strada Nova. Descanso al mediodía. Tarde en San Marcos con la Basílica y el Campanile. Cierre en la terraza del Fondaco con la puesta de sol sobre el Gran Canal.",
+   stops:[
+    {time:"09:00",title:"Mercato di Rialto",address:"Calle Prima de la Donzella, San Polo, Venezia",notes:"20 minutos a pie desde el depto por los callejones de San Marco y San Polo. El mercado de pescado más antiguo de Europa (desde 1097): atunes, pulpos vivos, calamar fresco, sepias brillando sobre el hielo. Los pescaderos gritan en véneto, olor a mar puro. Después suben al puente de Rialto.",lat:45.4397,lng:12.3338},
+    {time:"10:15",title:"Strada Nova — el tramo bueno",address:"Campo San Bartolomeo → Campo SS. Apostoli, Venezia",notes:"Arrancan desde Campo San Bartolomeo, al pie del puente de Rialto, y suben por el tramo más interesante de Strada Nova: vidrio de Murano artesanal, papel marmolado veneciano (carta marmorizzata), cuero, ropa italiana, pastelerías. Unos 700-800 metros hasta Campo SS. Apostoli — ahí paran cuando quieran y dan vuelta de vuelta al depto. Desvío opcional: Libreria Acqua Alta (libros apilados en una góndola dentro de la tienda, gratis).",lat:45.4410,lng:12.3310},
+    {time:"12:00",title:"Departamento — descanso libre",address:"Bacino Orseolo, San Marco, Venezia",notes:"Almuerzo en casa o en osteria cercana. Pausa larga. Cada uno hace lo que quiera. Salen frescos a las 15:00.",lat:45.4341,lng:12.3363},
+    {time:"15:00",title:"Basílica de San Marcos",address:"Piazza San Marco 328, Venezia",notes:"Reserva online obligatoria en basilicasanmarco.it — en julio la cola sin reserva es de 1 a 2 horas. 8.000 m² de mosaicos con pan de oro en el techo. La luz entra filtrada y lo convierte en algo entre catedral y cueva mágica. 50 minutos adentro tranquilos.",lat:45.4346,lng:12.3397,special:true},
+    {time:"16:00",title:"Campanile di San Marco",address:"Piazza San Marco, Venezia",notes:"Ascensor hasta arriba. Vista 360° a toda la laguna, los tejados rojos y las islas. El único lugar de Venecia donde ven que no hay calles — solo agua por todos lados. El momento 'wow' del viaje para Sofía y los chicos.",lat:45.4342,lng:12.3390},
+    {time:"17:00",title:"Campo Santa Margherita — tarde libre en Dorsoduro",address:"Campo Santa Margherita, Dorsoduro, Venezia",notes:"La plaza más auténtica de Venecia, llena de venecianos reales. Gelato en Suso (los mejores de la ciudad — sabor Manet: chocolate-avellana con crema de pistacho salado), aperitivo sentados afuera. Muy diferente al ambiente de San Marcos: acá la ciudad respira.",lat:45.4343,lng:12.3238},
+    {time:"19:30",title:"Terraza Fondaco dei Tedeschi",address:"San Marco 5541 (junto al Ponte di Rialto), Venezia",notes:"Palacio renacentista del siglo XVI con terraza gratuita en el techo: el puente de Rialto, el Gran Canal y los tejados de Venecia con la luz del atardecer. Reserva obligatoria online antes del viaje — los slots de puesta de sol se agotan días antes. 15 minutos arriba que no se olvidan. Cena después en una osteria de San Polo a metros de ahí.",lat:45.4383,lng:12.3366,special:true}
+  ]},
+
+  {id:3,date:"Vie 25/7",title:"Última mañana · San Geremia · Milán",subtitle:"Mañana libre · Góndola opcional · San Geremia · Tren ~15:00",color:"#4A6F8F",special:true,
+   banner:"🚄 Último día en Venecia. Mañana libre sin agenda. San Geremia antes de partir — las reliquias de Santa Lucía a 3 minutos de la estación. Tren a Milán ~15:00 hs desde Venezia Santa Lucia.",
+   stops:[
+    {time:"Mañana",title:"Mañana libre — sin agenda",address:"Bacino Orseolo y alrededores, Venezia",notes:"Último desayuno en Venecia. Paseo final por la Piazza sin apuro, compras de último momento, o simplemente sentarse en algún campo a mirar la ciudad antes de irse.",lat:45.4341,lng:12.3363},
+    {time:"Opcional",title:"Góndola desde el Bacino Orseolo",address:"Bacino Orseolo (puerta del departamento), Venezia",notes:"El embarcadero de góndolas más famoso de Venecia está literalmente en la puerta del depto. €90 por 30 minutos para 5 personas — precio regulado por el gobierno, no se negocia. Si lo van a hacer en el viaje, la mañana del último día con poca gente y luz tranquila es el momento ideal.",lat:45.4341,lng:12.3369,optional:true},
+    {time:"12:30",title:"San Geremia — reliquias de Santa Lucía",address:"Campo San Geremia 272, Cannaregio, Venezia",notes:"Toman el Vaporetto N°1 desde San Marco hasta Ferrovia y caminan 3 minutos. La iglesia original de Santa Lucía fue demolida en 1861 para construir la estación que hoy lleva su nombre — sus reliquias llegaron aquí. Silenciosa, gratuita, sin turistas. Un lugar genuinamente emotivo para cerrar Venecia.",lat:45.4426,lng:12.3252,special:true},
+    {time:"~14:15",title:"Venezia Santa Lucia — tren a Milán",address:"Stazione di Santa Lucia, Venezia",notes:"A 3 minutos a pie de San Geremia. Tren a Milano Centrale: Freccie o Italo, unas 2h 30min. Confirmar horario exacto y andén en las pantallas de la estación. Próximo capítulo del viaje.",lat:45.4411,lng:12.3211,special:true}
+  ]}
+];
+
+const PRACTICAL=[
+  {title:"Qué reservar antes de viajar",items:[
+    ["Basílica de San Marcos — OBLIGATORIO","basilicasanmarco.it · En julio la cola sin reserva es de 1-2 horas. Reservar para las 15:00 hs del 24/07."],
+    ["Terraza Fondaco dei Tedeschi — OBLIGATORIO","fondacodeitedeschi.com · Pedir turno 19:00-20:00 para la luz dorada del atardecer. Los slots de sunset se agotan días antes."],
+    ["Tren Venezia → Milán","trenitalia.com o italotreno.it · Sale desde Venezia Santa Lucia el 25/07 ~15:00 hs."]
+  ]},
+  {title:"Transporte en Venezia — para 5 personas",items:[
+    ["Billete 24h del Vaporetto","€25 adultos · €13 menores. Se compra en máquinas de la estación al llegar. Sirve para el vaporetto del día 1 y para ir a San Geremia el día 3."],
+    ["Todo a pie","Venecia es pequeña y compacta. Del depto en Bacino Orseolo: Rialto a 20 min, Dorsoduro a 20 min, Cannaregio a 30 min. No hay taxis ni buses dentro de la ciudad."],
+    ["Góndola","€90 para 5 personas · 30 minutos · precio regulado por el gobierno. Embarcadero en la puerta del depto (Bacino Orseolo)."]
+  ]},
+  {title:"Consejos prácticos",items:[
+    ["Agua gratis","Las fuentes públicas nasoni distribuidas por toda la ciudad tienen agua potable fría. Ahorra mucho con 5 personas en julio."],
+    ["Restaurantes","Evitar locales con fotos en el menú, anfitrión en la puerta y mesas en la Piazza San Marco. Alejarse media cuadra = precios a la mitad."],
+    ["Pickpockets","Máxima atención en el Vaporetto N°1, el puente de Rialto y la Piazza San Marco. Bolsos adelante, documentos en el hotel."]
+  ]},
+  {title:"Ruta completa del viaje",items:[
+    ["Buenos Aires → París","Vuelo desde EZE"],
+    ["París → Londres","Eurostar, llegada St Pancras"],
+    ["Londres → Roma","BA, Heathrow → Roma 18/7"],
+    ["Roma — 5 días","18/07 al 22/07"],
+    ["Roma → Firenze","Frecciarossa 12:00 del 22/07 desde Tiburtina"],
+    ["Firenze — 2 días","22/07 al 23/07 · cerca de Santa Maria Novella"],
+    ["Firenze → Venezia","Frecciarossa 14:20 del 23/07 desde Firenze SMN"],
+    ["Venezia — 3 días","23/07 al 25/07 · Bacino Orseolo, San Marco"],
+    ["Venezia → Milán","Tren ~15:00 del 25/07 desde Santa Lucia"]
+  ]}
+];
+
+let map,layer;
+function initMap(){
+  map=L.map('map',{attributionControl:true,zoomControl:true}).setView([HOME.lat,HOME.lng],14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'}).addTo(map);
+  layer=L.layerGroup().addTo(map);
+}
+function pin(h){return L.divIcon({html:h,className:'',iconSize:[26,26],iconAnchor:[13,13]});}
+function gmaps(fLat,fLng,tLat,tLng){
+  return `https://www.google.com/maps/dir/?api=1&origin=${fLat},${fLng}&destination=${tLat},${tLng}&travelmode=walking`;
+}
+
+function renderDay(idx){
+  const day=DAYS[idx];
+  const dc=day.color;
+
+  document.documentElement.style.setProperty('--accent',dc);
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+
+  document.getElementById('day-content').innerHTML=`
+    <div class="day-label"><p>DÍA ${day.id} &nbsp;·&nbsp; ${day.date.toUpperCase()}</p></div>
+    <div class="day-title-block"><h2>${day.title}</h2></div>
+    ${day.subtitle?`<div class="day-subtitle"><p>${day.subtitle}</p></div>`:''}
+    <div class="banner">${day.banner}</div>`;
+
+  layer.clearLayers();
+  const pts=[[HOME.lat,HOME.lng]];
+  L.marker([HOME.lat,HOME.lng],{icon:pin('<div class="lmarker home">🏠</div>')})
+    .addTo(layer).bindPopup(`<b>${HOME.name}</b>`);
+  day.stops.forEach((s,i)=>{
+    const m=L.marker([s.lat,s.lng],{icon:pin(`<div class="lmarker" style="background:${dc}">${i+1}</div>`)}).addTo(layer);
+    const prev=i===0?HOME:day.stops[i-1];
+    m.bindPopup(`<b>${s.time} · ${s.title}</b><br>${s.address}<br><a href="${gmaps(prev.lat,prev.lng,s.lat,s.lng)}" target="_blank">Cómo llegar →</a>`);
+    pts.push([s.lat,s.lng]);
+  });
+  L.polyline(pts,{color:dc,weight:3,dashArray:'6,8',opacity:.85}).addTo(layer);
+  map.fitBounds(L.latLngBounds(pts),{padding:[24,24]});
+
+  const sch=document.getElementById('schedule');
+  sch.innerHTML='';
+  day.stops.forEach((s,i)=>{
+    const prev=i===0?HOME:day.stops[i-1];
+    const prevName=i===0?'el depto':`parada ${i}`;
+    const el=document.createElement('div');
+    const cls=s.optional?'stop optional':s.special?'stop special':'stop';
+    el.className=cls;
+    const badge=s.optional?' <span style="font-size:.7rem;background:#E2ECF4;color:#4A6F8F;padding:1px 7px;border-radius:99px;font-weight:600;vertical-align:middle">Opcional</span>':'';
+    el.innerHTML=`
+      <div class="stop-header">
+        <div class="stop-num">${i+1}</div>
+        <div class="stop-meta">
+          <div class="stop-time">${s.time}</div>
+          <div class="stop-title">${s.title.replace(/—/g,'&mdash;')}${s.special&&!s.optional?' <span class="sparkle">✨</span>':''}${badge}</div>
+          <div class="stop-addr">${s.address}</div>
+        </div>
+      </div>
+      <div class="stop-notes">${s.notes}</div>
+      <div class="stop-footer">
+        <a class="btn-go" href="${gmaps(prev.lat,prev.lng,s.lat,s.lng)}" target="_blank">🧭 Desde ${prevName}</a>
+      </div>`;
+    sch.appendChild(el);
+  });
+
+  const prac=document.getElementById('practical');
+  if(idx===DAYS.length-1){
+    prac.innerHTML=`<div class="practical-title"><p>Información práctica</p></div><div class="tips">`+
+      PRACTICAL.map(sec=>`
+        <div class="tip-item">
+          <div class="tip-title">${sec.title}</div>
+          ${sec.items.map(([l,b])=>`<div class="tip-text"><b>${l}:</b> ${b}</div>`).join('')}
+        </div>
+        <hr class="tip-divider">`).join('')
+      +`</div>`;
+  } else {
+    prac.innerHTML='';
+  }
+}
+
+function buildTabs(){
+  const te=document.getElementById('tabs');
+  DAYS.forEach((d,i)=>{
+    const b=document.createElement('button');
+    b.className='tab'+(i===0?' active':'');
+    b.style.setProperty('--tab-color',d.color);
+    b.innerHTML=`<span class="num">${d.id}</span> ${d.date}${d.special?' ✨':''}`;
+    b.addEventListener('click',()=>renderDay(i));
+    te.appendChild(b);
+  });
+}
+
+initMap();
+buildTabs();
+renderDay(0);
+</script>
+</body>
+</html>
